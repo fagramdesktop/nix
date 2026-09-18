@@ -127,23 +127,22 @@ jobs:
           echo "Release Archive: $ARCHIVE_NAME"
           echo "Nix SRI Hash:    $HASH"
           echo "================================================="
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
           echo "ARCHIVE_HASH=$HASH" >> $GITHUB_ENV
           echo "$HASH" > "dist/$ARCHIVE_NAME.sha256"
           echo "ARCHIVE_PATH=dist/$ARCHIVE_NAME" >> $GITHUB_ENV
 
       - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.TAGNAME }}
+          name: "FAgram Desktop ${{ env.TAGNAME }}"
+          body: |
+            Official FAgram Desktop prebuilt release built natively from source via Nix CI.
+            Archive: `${{ env.ARCHIVE_NAME }}`
+            Nix SRI Hash: `${{ env.ARCHIVE_HASH }}`
+          files: |
+            dist/fagram-desktop-*.tar.zst
+            dist/fagram-desktop-*.tar.zst.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Publishing release ${{ env.TAGNAME }}..."
-          cat << 'EOF' > dist/release-notes.md
-          Official FAgram Desktop prebuilt release built natively from source via Nix CI.
-          Archive: `${{ env.ARCHIVE_NAME }}`
-          Nix SRI Hash: `${{ env.ARCHIVE_HASH }}`
-          EOF
-
-          gh release create "${{ env.TAGNAME }}" "${{ env.ARCHIVE_PATH }}" "${{ env.ARCHIVE_PATH }}.sha256" \
-            --title "FAgram Desktop ${{ env.TAGNAME }}" \
-            --notes-file dist/release-notes.md \
-            --clobber || \
-          gh release upload "${{ env.TAGNAME }}" "${{ env.ARCHIVE_PATH }}" "${{ env.ARCHIVE_PATH }}.sha256" --clobber
