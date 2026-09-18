@@ -1,0 +1,104 @@
+name: Build from Source & Publish Prebuilt Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tagname:
+        description: "Release tag (e.g. v2.5.8)"
+        type: string
+        required: false
+      disable_cache:
+        description: "Skip restore cache (rebuild from source)"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build from Source & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set TAGNAME
+        id: tagname
+        run: |
+          if [ -n "${{ inputs.tagname }}" ]; then
+            TAGNAME="${{ inputs.tagname }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAGNAME="${GITHUB_REF#refs/tags/}"
+          else
+            TAGNAME="v2.5.8"
+          fi
+          echo "TAGNAME=$TAGNAME" >> $GITHUB_ENV
+          echo "tagname=$TAGNAME" >> $GITHUB_OUTPUT
+
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          swap-storage: false
+
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@master
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Magic Nix Cache
+        if: ${{ inputs.disable_cache != true && inputs.disable_cache != 'true' }}
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build FAgram Desktop from Source
+        run: |
+          nix build .#source --print-build-logs
+
+      - name: Package Release Archive (Zstandard Ultra)
+        run: |
+          mkdir -p dist
+          ARCHIVE_NAME="fagram-desktop-${{ env.TAGNAME }}-x86_64-linux.tar.zst"
+          echo "Archiving Nix result into dist/$ARCHIVE_NAME..."
+          tar -I 'zstd -T0 --ultra -22' -cvf "dist/$ARCHIVE_NAME" -C result .
+          ls -lh "dist/$ARCHIVE_NAME"
+
+          HASH=$(nix hash file "dist/$ARCHIVE_NAME")
+          echo "================================================="
+          echo "Release Archive: $ARCHIVE_NAME"
+          echo "Nix SRI Hash:    $HASH"
+          echo "================================================="
+          echo "ARCHIVE_HASH=$HASH" >> $GITHUB_ENV
+          echo "$HASH" > "dist/$ARCHIVE_NAME.sha256"
+          echo "ARCHIVE_PATH=dist/$ARCHIVE_NAME" >> $GITHUB_ENV
+
+      - name: Publish to GitHub Releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Publishing release ${{ env.TAGNAME }}..."
+          cat << 'EOF' > dist/release-notes.md
+          Official FAgram Desktop prebuilt release built natively from source via Nix CI.
+          Archive: `${{ env.ARCHIVE_NAME }}`
+          Nix SRI Hash: `${{ env.ARCHIVE_HASH }}`
+          EOF
+
+          gh release create "${{ env.TAGNAME }}" "${{ env.ARCHIVE_PATH }}" "${{ env.ARCHIVE_PATH }}.sha256" \
+            --title "FAgram Desktop ${{ env.TAGNAME }}" \
+            --notes-file dist/release-notes.md \
+            --clobber || \
+          gh release upload "${{ env.TAGNAME }}" "${{ env.ARCHIVE_PATH }}" "${{ env.ARCHIVE_PATH }}.sha256" --clobber

@@ -13,12 +13,21 @@
       packages = forEachSystem (system:
         let
           pkgs = import nixpkgs { inherit system; };
-          fagram-desktop = pkgs.kdePackages.callPackage ./pkgs/default.nix {
+
+          source = pkgs.kdePackages.callPackage ./pkgs/default.nix {
             tg_owt = pkgs.telegram-desktop.tg_owt;
           };
+
+          prebuilt = if system == "x86_64-linux"
+            then pkgs.callPackage ./pkgs/binary.nix { }
+            else source;
         in {
-          inherit fagram-desktop;
-          default = fagram-desktop;
+          inherit source prebuilt;
+          # Aliases
+          fagram-desktop = source;
+          fagram-bin = prebuilt;
+          # Default to native source build
+          default = source;
         }
       );
 
@@ -27,10 +36,21 @@
           type = "app";
           program = "${self.packages.${system}.default}/bin/fagram";
         };
+        prebuilt = {
+          type = "app";
+          program = "${self.packages.${system}.prebuilt}/bin/fagram";
+        };
+        source = {
+          type = "app";
+          program = "${self.packages.${system}.source}/bin/fagram";
+        };
       });
 
       overlays.default = final: prev: {
-        fagram-desktop = self.packages.${prev.system}.fagram-desktop;
+        fagram-prebuilt = self.packages.${prev.system}.prebuilt;
+        fagram-source = self.packages.${prev.system}.source;
+        fagram-desktop = self.packages.${prev.system}.source;
+        fagram-bin = self.packages.${prev.system}.prebuilt;
       };
     };
 }

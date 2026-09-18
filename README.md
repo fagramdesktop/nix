@@ -6,17 +6,37 @@ Official Nix expressions and Flake repository for [**FAgram Desktop**](https://g
 
 ## 🚀 Quick Start
 
-Run FAgram Desktop directly without installing:
+Run FAgram Desktop immediately without compiling (~5 seconds):
 
 ```bash
+# Instant launch (prebuilt binary is the default):
 nix run github:fagramdesktop/nix
+
+# Explicitly select the prebuilt binary package:
+nix run github:fagramdesktop/nix#prebuilt
+
+# Or compile and run from source:
+nix run github:fagramdesktop/nix#source
 ```
 
-Install into your user profile:
+Install to your user profile:
 
 ```bash
-nix profile install github:fagramdesktop/nix
+# Fast prebuilt binary:
+nix profile install github:fagramdesktop/nix#prebuilt
+
+# Or build from source:
+nix profile install github:fagramdesktop/nix#source
 ```
+
+---
+
+## 📦 Available Packages
+
+| Target | Description | Recommended For |
+| :--- | :--- | :--- |
+| **`#prebuilt`** (default on x86_64) | Instant prebuilt binary using `autoPatchelfHook` | Everyday use, fast setup, no compile time |
+| **`#source`** | Full source build compiled with CMake & Ninja | Custom patches, development, aarch64 |
 
 ---
 
@@ -31,18 +51,20 @@ In your system or home-manager `flake.nix`:
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     fagram.url = "github:fagramdesktop/nix";
-    # Ensure nixpkgs inputs match if desired:
-    # fagram.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { self, nixpkgs, fagram, ... }: {
     # NixOS configuration
     nixosConfigurations.yourhostname = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux"; # or "aarch64-linux"
+      system = "x86_64-linux";
       modules = [
         ({ pkgs, ... }: {
           environment.systemPackages = [
-            fagram.packages.${pkgs.system}.default
+            # Use instant prebuilt binary:
+            fagram.packages.${pkgs.system}.prebuilt
+
+            # Or compile from source:
+            # fagram.packages.${pkgs.system}.source
           ];
         })
       ];
@@ -53,7 +75,7 @@ In your system or home-manager `flake.nix`:
 
 ### 2. Using the Overlay
 
-You can also use the exported overlay to expose `pkgs.fagram-desktop`:
+You can also use the exported overlay:
 
 ```nix
 nixpkgs.overlays = [
@@ -61,7 +83,8 @@ nixpkgs.overlays = [
 ];
 
 environment.systemPackages = [
-  pkgs.fagram-desktop
+  pkgs.fagram-prebuilt  # Fast binary
+  # pkgs.fagram-source  # Source build
 ];
 ```
 
@@ -74,7 +97,13 @@ To build from this repository locally:
 ```bash
 git clone https://github.com/fagramdesktop/nix.git
 cd nix
-nix build .#fagram-desktop
+
+# Build prebuilt binary:
+nix build .#prebuilt
+./result/bin/fagram
+
+# Or build from source:
+nix build .#source
 ./result/bin/fagram
 ```
 
@@ -82,7 +111,7 @@ nix build .#fagram-desktop
 
 ## 🔄 Automatic Updates
 
-When a new version of [FAgram Desktop](https://github.com/fagramdesktop/fadesktop) is released, this repository is automatically updated with the new release version, Git commit revision, and source hash via GitHub Actions.
+When a new version of [FAgram Desktop](https://github.com/fagramdesktop/fadesktop) is released, this repository is automatically updated with both the new prebuilt binary tarball hash and the source revision via GitHub Actions.
 
 ## 📄 License
 
