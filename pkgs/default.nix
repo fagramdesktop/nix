@@ -19,8 +19,12 @@
 
 stdenv.mkDerivation (finalAttrs: {
   inherit pname;
-  inherit (finalAttrs.unwrapped) version meta passthru;
+  inherit (finalAttrs.unwrapped) version meta;
   inherit unwrapped;
+
+  passthru = (unwrapped.passthru or { }) // {
+    inherit unwrapped;
+  };
 
   nativeBuildInputs = [ wrapQtAppsHook ]
     ++ lib.optionals withWebkit [ wrapGAppsHook3 ];

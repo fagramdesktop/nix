@@ -1,4 +1,4 @@
-name: Build from Source & Publish Prebuilt Release
+name: Prebuilt Release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tagname:
-        description: "Release tag (e.g. v2.5.8)"
+        description: "Release tag (e.g. v2.5.7)"
         type: string
         required: false
       disable_cache:
@@ -33,7 +33,7 @@ jobs:
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAGNAME="${GITHUB_REF#refs/tags/}"
           else
-            TAGNAME="v2.5.8"
+            TAGNAME="v2.5.7"
           fi
           echo "TAGNAME=$TAGNAME" >> $GITHUB_ENV
           echo "tagname=$TAGNAME" >> $GITHUB_OUTPUT

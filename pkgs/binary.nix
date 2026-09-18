@@ -10,7 +10,7 @@
 let
   fagram-raw = stdenv.mkDerivation (finalAttrs: {
     pname = "fagram-raw";
-    version = "2.5.8";
+    version = "2.5.7";
 
     src = fetchurl {
       url = "https://github.com/fagramdesktop/nix/releases/download/v${finalAttrs.version}/fagram-desktop-v${finalAttrs.version}-x86_64-linux.tar.zst";

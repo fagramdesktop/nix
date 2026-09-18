@@ -6,27 +6,27 @@ Official Nix expressions and Flake repository for [**FAgram Desktop**](https://g
 
 ## 🚀 Quick Start
 
-Run FAgram Desktop immediately without compiling (~5 seconds):
+Run FAgram Desktop:
 
 ```bash
-# Instant launch (prebuilt binary is the default):
+# Launch default native package:
 nix run github:fagramdesktop/nix
 
-# Explicitly select the prebuilt binary package:
+# Or launch fast pre-compiled package:
 nix run github:fagramdesktop/nix#prebuilt
 
-# Or compile and run from source:
+# Or explicitly select the source build:
 nix run github:fagramdesktop/nix#source
 ```
 
 Install to your user profile:
 
 ```bash
-# Fast prebuilt binary:
-nix profile install github:fagramdesktop/nix#prebuilt
+# Default native package:
+nix profile install github:fagramdesktop/nix
 
-# Or build from source:
-nix profile install github:fagramdesktop/nix#source
+# Or fast prebuilt package:
+nix profile install github:fagramdesktop/nix#prebuilt
 ```
 
 ---
@@ -35,8 +35,8 @@ nix profile install github:fagramdesktop/nix#source
 
 | Target | Description | Recommended For |
 | :--- | :--- | :--- |
-| **`#prebuilt`** (default on x86_64) | Instant prebuilt binary using `autoPatchelfHook` | Everyday use, fast setup, no compile time |
-| **`#source`** | Full source build compiled with CMake & Ninja | Custom patches, development, aarch64 |
+| **`#source` / `#default`** | Full native package compiled from source with CMake & Ninja | Pure NixOS / Nix integration, native Wayland & Qt6 theming |
+| **`#prebuilt`** | Pre-compiled package built natively by our GitHub Actions CI pipeline | Fast installation without local compilation |
 
 ---
 
@@ -60,11 +60,10 @@ In your system or home-manager `flake.nix`:
       modules = [
         ({ pkgs, ... }: {
           environment.systemPackages = [
-            # Use instant prebuilt binary:
-            fagram.packages.${pkgs.system}.prebuilt
+            fagram.packages.${pkgs.system}.default
 
-            # Or compile from source:
-            # fagram.packages.${pkgs.system}.source
+            # Or pre-compiled binary:
+            # fagram.packages.${pkgs.system}.prebuilt
           ];
         })
       ];
@@ -83,8 +82,9 @@ nixpkgs.overlays = [
 ];
 
 environment.systemPackages = [
-  pkgs.fagram-prebuilt  # Fast binary
-  # pkgs.fagram-source  # Source build
+  pkgs.fagram           # Default package
+  # pkgs.fagram-prebuilt # Prebuilt package
+  # pkgs.fagram-source   # Source build
 ];
 ```
 

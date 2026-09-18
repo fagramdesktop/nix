@@ -47,9 +47,10 @@
       });
 
       overlays.default = final: prev: {
+        fagram = self.packages.${prev.system}.default;
+        fagram-desktop = self.packages.${prev.system}.source;
         fagram-prebuilt = self.packages.${prev.system}.prebuilt;
         fagram-source = self.packages.${prev.system}.source;
-        fagram-desktop = self.packages.${prev.system}.source;
         fagram-bin = self.packages.${prev.system}.prebuilt;
       };
     };
