@@ -6,13 +6,13 @@ Official Nix expressions and Flake repository for [**FAgram Desktop**](https://g
 
 ## 🚀 Quick Start
 
-Run FAgram Desktop directly without installing:
+Run FAgram Desktop directly:
 
 ```bash
 nix run github:fagramdesktop/nix
 ```
 
-Install into your user profile:
+Install to your user profile:
 
 ```bash
 nix profile install github:fagramdesktop/nix
@@ -31,8 +31,6 @@ In your system or home-manager `flake.nix`:
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     fagram.url = "github:fagramdesktop/nix";
-    # Ensure nixpkgs inputs match if desired:
-    # fagram.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { self, nixpkgs, fagram, ... }: {
@@ -53,7 +51,7 @@ In your system or home-manager `flake.nix`:
 
 ### 2. Using the Overlay
 
-You can also use the exported overlay to expose `pkgs.fagram-desktop`:
+You can also use the exported overlay:
 
 ```nix
 nixpkgs.overlays = [
@@ -82,7 +80,7 @@ nix build .#fagram-desktop
 
 ## 🔄 Automatic Updates
 
-When a new version of [FAgram Desktop](https://github.com/fagramdesktop/fadesktop) is released, this repository is automatically updated with the new release version, Git commit revision, and source hash via GitHub Actions.
+When a new version of [FAgram Desktop](https://github.com/fagramdesktop/fadesktop) is released, this repository is automatically updated with the new Git commit revision and source hash via GitHub Actions.
 
 ## 📄 License
 
