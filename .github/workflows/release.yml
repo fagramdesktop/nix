@@ -54,12 +54,29 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Set up ccache
+        run: |
+          curl -sSL https://github.com/ccache/ccache/releases/download/v4.13.6/ccache-4.13.6-linux-x86_64-glibc.tar.xz \
+          | sudo tar xJ -C /usr/local/bin --strip-components=1 ccache-4.13.6-linux-x86_64-glibc/ccache
+          mkdir -p "$RUNNER_TEMP/.tdesktop-cache"
+          echo "CCACHE_DIR=$RUNNER_TEMP/.tdesktop-cache" >> $GITHUB_ENV
+
+      - name: Restore FAgram cache
+        id: cache-tdesktop
+        if: ${{ inputs.disable_cache != true && inputs.disable_cache != 'true' }}
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ runner.OS }}-tdesktop-${{ github.run_id }}
+          restore-keys: ${{ runner.OS }}-tdesktop-
+
       - name: Install Nix
         uses: cachix/install-nix-action@master
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           extra_nix_config: |
             experimental-features = nix-command flakes
+            extra-sandbox-paths = /var/cache/ccache?=${{ env.CCACHE_DIR }}
 
       - name: Magic Nix Cache
         if: ${{ inputs.disable_cache != true && inputs.disable_cache != 'true' }}
@@ -67,7 +84,35 @@ jobs:
 
       - name: Build FAgram Desktop from Source
         run: |
+          mkdir -p ${{ env.CCACHE_DIR }}
+          ccache -z
           nix build .#source --print-build-logs
+
+      - name: Count ccache misses
+        id: ccache-stats
+        if: ${{ inputs.disable_cache != true && inputs.disable_cache != 'true' }}
+        run: |
+          MISSES=$(ccache --print-stats | sed -n 's/^cache_miss\t//p' | head -1)
+          case "$MISSES" in (*[!0-9]*|'') MISSES=0;; esac
+          echo "misses=$MISSES" >> $GITHUB_OUTPUT
+          echo "ccache misses this run: $MISSES"
+
+      - name: Trim Telegram Desktop cache
+        if: >
+          inputs.disable_cache != true
+            && inputs.disable_cache != 'true'
+            && fromJSON(steps.ccache-stats.outputs.misses) > 300
+        run: ccache --evict-older-than 1d
+
+      - name: Save Telegram Desktop cache
+        if: >
+          inputs.disable_cache != true
+            && inputs.disable_cache != 'true'
+            && fromJSON(steps.ccache-stats.outputs.misses) > 300
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.cache-tdesktop.outputs.cache-primary-key }}
 
       - name: Package Release Archive (Zstandard Ultra)
         run: |

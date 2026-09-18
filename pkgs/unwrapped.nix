@@ -29,7 +29,8 @@
   tdlib,
   tg_owt,
   pango,
-  tlottie
+  tlottie,
+  ccache,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -52,6 +53,7 @@ stdenv.mkDerivation (finalAttrs: {
     qtshadertools
     clang
     gobject-introspection
+    ccache
   ];
 
   buildInputs = [
@@ -80,11 +82,24 @@ stdenv.mkDerivation (finalAttrs: {
 
   dontWrapQtApps = true;
 
+  preConfigure = ''
+    if [ -d /var/cache/ccache ]; then
+      export CCACHE_DIR=/var/cache/ccache
+      export CCACHE_SLOPPINESS=pch_defines,time_macros
+    elif [ -n "$CCACHE_DIR" ]; then
+      export CCACHE_SLOPPINESS=pch_defines,time_macros
+    else
+      export CCACHE_DISABLE=1
+    fi
+  '';
+
   cmakeFlags = [
     (lib.cmakeFeature "TDESKTOP_API_ID" "37535655")
     (lib.cmakeFeature "TDESKTOP_API_HASH" "3c6cd55d00180f7439bc2edf391306cf")
     (lib.cmakeBool "DESKTOP_APP_DISABLE_AUTOUPDATE" true)
     (lib.cmakeBool "DESKTOP_APP_USE_PACKAGED" true)
+    (lib.cmakeFeature "CMAKE_C_COMPILER_LAUNCHER" "ccache")
+    (lib.cmakeFeature "CMAKE_CXX_COMPILER_LAUNCHER" "ccache")
   ];
 
   meta = with lib; {
